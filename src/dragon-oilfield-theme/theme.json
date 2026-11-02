@@ -1,0 +1,37 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/theme.json",
+  "version": 2,
+  "settings": {
+    "appearanceTools": true,
+    "layout": {"contentSize": "760px", "wideSize": "1190px"},
+    "color": {"palette": [
+      {"slug":"dragon-red","color":"#C92331","name":"Dragon Red"},
+      {"slug":"charcoal","color":"#15191E","name":"Charcoal"},
+      {"slug":"off-white","color":"#F4F3F0","name":"Off-white"},
+      {"slug":"gold","color":"#E5B93C","name":"Gold"},
+      {"slug":"white","color":"#FFFFFF","name":"White"}
+    ]},
+    "typography": {
+      "fluid": true,
+      "fontFamilies": [
+        {"fontFamily":"'Barlow Condensed', 'Arial Narrow', Arial, sans-serif","name":"Barlow Condensed","slug":"display"},
+        {"fontFamily":"'DM Sans', Arial, sans-serif","name":"DM Sans","slug":"body"}
+      ]
+    },
+    "spacing":{"units":["px","em","rem","%","vw"],"padding":true,"margin":true,"blockGap":true},
+    "blocks":{"core/button":{"border":{"radius":true}}}
+  },
+  "styles":{
+    "color":{"background":"#FFFFFF","text":"#1B2026"},
+    "typography":{"fontFamily":"var(--wp--preset--font-family--body)","fontSize":"16px","lineHeight":"1.65"},
+    "elements":{
+      "heading":{"typography":{"fontFamily":"var(--wp--preset--font-family--display)","fontWeight":"800","lineHeight":"1"}},
+      "button":{"border":{"radius":"0"},"typography":{"fontFamily":"var(--wp--preset--font-family--body)","fontWeight":"700","fontSize":"13px"}}
+    },
+    "blocks":{"core/navigation":{"typography":{"fontSize":"12px","fontWeight":"700"}}}
+  },
+  "templateParts":[
+    {"name":"header","title":"Header","area":"header"},
+    {"name":"footer","title":"Footer","area":"footer"}
+  ]
+}
