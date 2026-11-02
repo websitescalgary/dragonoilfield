@@ -1,3 +1,13 @@
+# Importer update — version 1.0.2
+
+The original-photo limitation described in the historical report below is resolved for the updated package. All 11 approved originals were downloaded with TLS verification enabled and verified as JPEGs. The setup plugin now bundles these photos and a SHA-256 source manifest, then copies each verified file into a temporary file for WordPress media sideloading. It requires no old-host network access. No TLS verification was disabled. Existing Home content is preserved.
+
+New WordPress runtime checks passed with outbound HTTP explicitly blocked: 11 attachments with physical files matching all source checksums; 16 image/cover blocks with IDs; published Home; successful same-domain import at https://dragonoilfield.com; rerun content preservation; rejection of an unapproved source URL; PHP syntax. The same-domain guard previously rejected legitimate new local upload URLs and is fixed. Rebel's reported cURL hostname mismatch remains a hosting/routing issue, but no longer blocks this installer. Production HTTPS still needs configuration.
+
+All five responsive widths (1440, 1024, 768, 390, 320), image decoding, overflow checks, mobile menu and reduced motion also passed with the real imported photos. Theme templates validate in Gutenberg. Rebel installation of this update and real inbox receipt remain pending. No DNS or hosting changes were made by Codex. Historical fixture test results below describe the earlier release.
+
+---
+
 # Dragon V4 QA report
 
 Prepared 2026-11-02. Status: installable packages prepared and local development verified; NOT cleared for production launch.

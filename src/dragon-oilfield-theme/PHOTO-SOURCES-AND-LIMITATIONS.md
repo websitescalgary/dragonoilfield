@@ -1,3 +1,7 @@
+# Updated photo import
+
+Setup plugin 1.0.2 now bundles all 11 approved original photographs, downloaded and verified with TLS verification enabled. It verifies bundled SHA-256 hashes before WordPress sideloading; no old-host download is required on Rebel. All 11 originals have passed an actual local WordPress import. The following notes describe the earlier remote-download package and its source URL inventory.
+
 # Photo sources in V4
 
 The pattern references 11 approved old-site photo URLs, listed below. Tools → Dragon Site Setup must import all of them into the new Media Library before it creates Home. Successful partial imports are retained, and existing Home content is never overwritten. Image/cover blocks receive local URLs and attachment IDs.

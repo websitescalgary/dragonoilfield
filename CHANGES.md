@@ -1,3 +1,9 @@
+# Importer 1.0.2
+
+- src/dragon-site-setup/dragon-site-setup.php: bundled verified originals replace remote downloading; manifest checksums and filename restrictions; correct local-media check for same-domain migration; updated admin explanation and version.
+- src/dragon-site-setup/originals/: 11 approved original JPEGs plus source URLs, dimensions and SHA-256 checksums in manifest.json.
+- Updated setup ZIP, handoff ZIP, checksums and handoff documentation.
+
 # Changes from the supplied V4 archive
 
 - src/dragon-oilfield-theme/functions.php

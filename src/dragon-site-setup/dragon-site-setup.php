@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Dragon Site Setup & Photo Import
  * Description: One-time import of approved Dragon photos into the WordPress Media Library and creation of an editable homepage using the installed theme.
- * Version: 1.0.1
+ * Version: 1.0.2
  * Requires at least: 6.4
  * Requires PHP: 7.4
  */
@@ -17,8 +17,8 @@ function dragon_site_setup_page() {
     $feedback = get_transient('dragon_setup_status_'.get_current_user_id());
     if ($feedback) { delete_transient('dragon_setup_status_'.get_current_user_id()); }
     echo '<div class="wrap"><h1>Dragon Site Setup</h1>';
-    echo '<p>Imports the actual images from Dragon Oilfield&#8217;s existing public website to <strong>this site&#8217;s WordPress Media Library</strong>. It then creates an editable Home page with local image URLs. No external image hotlinks will remain in the created page.</p>';
-    echo '<p><strong>Before running:</strong> make sure the Dragon Oilfield V4 theme is active. The hosting server must be able to access dragonoilfield.com. This does not touch DNS, email records, or your old website.</p>';
+    echo '<p>Imports the bundled original Dragon Oilfield photographs to <strong>this site&#8217;s WordPress Media Library</strong>. It then creates an editable Home page with local image URLs. No external image hotlinks will remain in the created page.</p>';
+    echo '<p><strong>Before running:</strong> make sure the Dragon Oilfield V4 theme is active. The included originals are imported locally; no connection to the old photo host is needed. This does not touch DNS, email records, or your old website.</p>';
     if (is_array($feedback)) {
         $klass = empty($feedback['errors']) ? 'notice-success' : 'notice-warning';
         echo '<div class="notice '.esc_attr($klass).'"><p>'.esc_html($feedback['message']).'</p>';
@@ -76,8 +76,8 @@ function dragon_run_site_setup() {
             $image_id = 0; // Recover from deleted files on a partial-import retry.
         }
         if (!$image_id) {
-            $temp = download_url($url, 50);
-            if (is_wp_error($temp)) { $errors[] = 'Could not download '.basename($url).': '.$temp->get_error_message(); continue; }
+            $temp = dragon_setup_original_file($url);
+            if (is_wp_error($temp)) { $errors[] = 'Could not prepare '.basename($url).': '.$temp->get_error_message(); continue; }
             $fileinfo = @getimagesize($temp);
             $size = @filesize($temp);
             if (!$fileinfo || !in_array($fileinfo['mime'],['image/jpeg','image/png'],true) || !$size || $size > 16000000) {
@@ -96,11 +96,13 @@ function dragon_run_site_setup() {
         $attachment_ids[$new_url] = $image_id;
     }
     if ($errors || count($replacements) !== count($urls)) {
-        dragon_setup_feedback(count($replacements).' of '.count($urls).' originals available in the Media Library; homepage not created until all imports succeed. Re-run the import after fixing the download problem.', $errors);
+        dragon_setup_feedback(count($replacements).' of '.count($urls).' originals available in the Media Library; homepage not created until all imports succeed. Re-run the import after fixing the import problem.', $errors);
     }
     $content = str_replace(array_keys($replacements), array_values($replacements), $source);
-    if (strpos($content,'https://dragonoilfield.com/wp-content/uploads/') !== false) {
-        dragon_setup_feedback('Media import finished but a remote image reference remains; homepage has not been created.');
+    foreach ($urls as $original_url) {
+        if (strpos($content, $original_url) !== false && !in_array($original_url, array_values($replacements), true)) {
+            dragon_setup_feedback('Media import finished but an original image reference remains; homepage has not been created.');
+        }
     }
 
     $content = dragon_setup_attach_blocks($content, $attachment_ids);
@@ -146,4 +148,33 @@ function dragon_setup_attach_blocks($content, $ids) {
         return $blocks;
     };
     return serialize_blocks($walk(parse_blocks($content)));
+}
+
+/** Copy a checksum-verified original to a temporary file for WordPress sideloading. */
+function dragon_setup_original_file($url) {
+    $directory = __DIR__.'/originals/';
+    $manifest_file = $directory.'manifest.json';
+    if (!is_readable($manifest_file)) {
+        return new WP_Error('dragon_missing_manifest', 'Bundled photo manifest is missing. Reinstall the complete setup plugin ZIP.');
+    }
+    $manifest = json_decode(file_get_contents($manifest_file), true);
+    if (!is_array($manifest) || empty($manifest[$url]) || !is_array($manifest[$url])) {
+        return new WP_Error('dragon_missing_original', 'No approved bundled original for this URL. Install a matching theme and setup package.');
+    }
+    $entry = $manifest[$url];
+    if (empty($entry['file']) || !is_string($entry['file']) || basename($entry['file']) !== $entry['file'] ||
+        !preg_match('/^[a-zA-Z0-9_-]+\.jpe?g$/D', $entry['file']) ||
+        empty($entry['sha256']) || !is_string($entry['sha256']) || !preg_match('/^[a-f0-9]{64}$/D', $entry['sha256'])) {
+        return new WP_Error('dragon_invalid_manifest', 'Invalid bundled photo manifest entry.');
+    }
+    $file = $directory.$entry['file'];
+    if (!is_readable($file) || !hash_equals($entry['sha256'], hash_file('sha256', $file))) {
+        return new WP_Error('dragon_photo_checksum', 'Bundled original is missing or failed its checksum. Reinstall the complete setup plugin ZIP.');
+    }
+    $temp = wp_tempnam($entry['file']);
+    if (!$temp || !copy($file, $temp)) {
+        if ($temp) @unlink($temp);
+        return new WP_Error('dragon_photo_temp', 'Cannot prepare the photo. Check available disk space and temporary-directory permissions.');
+    }
+    return $temp;
 }

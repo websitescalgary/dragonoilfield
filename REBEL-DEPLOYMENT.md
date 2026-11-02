@@ -1,3 +1,7 @@
+# Setup plugin 1.0.2 update
+
+Use dragon-site-setup-v4-1.0.2.zip (also supplied under the original final ZIP filename). In WordPress go to Plugins → Add New → Upload Plugin, install the replacement, choose Replace current with uploaded when prompted, and activate if needed. Then rerun Tools → Dragon Site Setup. This version imports the 11 bundled checksum-verified original JPEGs locally, avoiding old-host TLS/DNS problems. Theme and contact-form plugin updates are not required for this fix. Existing Home content is preserved. The historical instructions below refer to the older remote-download installer; remote downloads are no longer needed for the bundled pattern. The source manifest is inside dragon-site-setup/originals/manifest.json.
+
 # Dragon V4 — Rebel staging and launch checklist
 
 Status: locally tested, not deployed and not approved for go-live. Original-photo transfer, Rebel runtime checks, authenticated mail configuration, and Billy's real inbox confirmation remain pending.
