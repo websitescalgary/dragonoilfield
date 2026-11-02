@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Dragon Lead Form
  * Description: Inquiry form, saved submissions, and email notifications for Dragon Oilfield Supply.
- * Version: 1.2.1
+ * Version: 1.2.2
  * Requires at least: 6.4
  * Requires PHP: 7.4
  * Text Domain: dragon-lead-form
@@ -36,7 +36,8 @@ function dragon_form_settings_page() {
 }
 
 add_shortcode('dragon_inquiry_form', function () {
-    $status = isset($_GET['dragon_form']) ? sanitize_key(wp_unslash($_GET['dragon_form'])) : '';
+    wp_enqueue_script('dragon-lead-form', plugins_url('assets/form.js', __FILE__), [], '1.2.2', true);
+    $status = isset($_GET['dragon_form']) && is_string($_GET['dragon_form']) ? sanitize_key(wp_unslash($_GET['dragon_form'])) : '';
     ob_start();
     if ($status === 'success') echo '<p class="dragon-form-message success" role="status">Thank you. Your enquiry has been received. We will get back to you soon.</p>';
     if ($status === 'error') echo '<p class="dragon-form-message" role="alert">We could not process your enquiry. Please check your name, phone or email, and enquiry, or email billy@dragonoilfield.com.</p>';
@@ -53,19 +54,29 @@ add_shortcode('dragon_inquiry_form', function () {
       </div>
       <p class="dragon-contact-method-help">Please provide at least one way to contact you: phone number or email address.</p>
       <button class="dragon-form-submit" type="submit">Send Enquiry</button>
+      <p class="dragon-form-message dragon-inline-status" role="status" aria-live="polite" tabindex="-1" hidden></p>
     </form>
     <?php return ob_get_clean();
 });
 
 add_action('admin_post_nopriv_dragon_send_inquiry','dragon_process_inquiry');
 add_action('admin_post_dragon_send_inquiry','dragon_process_inquiry');
-function dragon_form_redirect($result) {
+function dragon_form_redirect($result, $message = '', $status = 422) {
+    if ($message === '') {
+        $message = $result === 'success'
+            ? 'Thank you. Your enquiry has been received. We will get back to you soon.'
+            : 'Please check your name, phone or email, and enquiry, then try again.';
+    }
+    if (isset($_POST['dragon_ajax']) && is_string($_POST['dragon_ajax']) && $_POST['dragon_ajax'] === '1') {
+        nocache_headers();
+        wp_send_json(['result' => $result, 'message' => $message], $result === 'success' ? 200 : $status);
+    }
     $url = add_query_arg('dragon_form', $result, home_url('/'));
     wp_safe_redirect($url . '#contact', 303);
     exit;
 }
 function dragon_process_inquiry() {
-    if (!isset($_POST['dragon_form_nonce']) || !is_string($_POST['dragon_form_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['dragon_form_nonce'])), 'dragon_send_inquiry')) dragon_form_redirect('error');
+    if (!isset($_POST['dragon_form_nonce']) || !is_string($_POST['dragon_form_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['dragon_form_nonce'])), 'dragon_send_inquiry')) dragon_form_redirect('error', 'This form has expired. Refresh the page and try again.', 403);
     if (!empty($_POST['dragon_website'])) dragon_form_redirect('success'); // honeypot: accept without sending
     $v = static function($key, $limit=5000) {
         if (!isset($_POST[$key]) || !is_string($_POST[$key])) return '';
@@ -88,7 +99,7 @@ function dragon_process_inquiry() {
         ($phone && !$valid_phone) || ($email_raw && (!$email || $email_raw !== $email || !is_email($email)))) dragon_form_redirect('error');
     $ip=isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : 'unknown';
     $key='dragon_lead_'.substr(hash_hmac('sha256',$ip,wp_salt('nonce')),0,28);
-    if (get_transient($key)) dragon_form_redirect('error');
+    if (get_transient($key)) dragon_form_redirect('error', 'Please wait 45 seconds before sending another enquiry.', 429);
     set_transient($key,1,45);
     $details = "Name: $name\nPhone: ".($phone ?: "Not provided")."\nEmail: ".($email ?: "Not provided")."\n\nEnquiry:\n$message";
     $post_id = wp_insert_post([

@@ -1,3 +1,9 @@
+# Contact form 1.2.2
+
+- src/dragon-lead-form/dragon-lead-form.php: enqueue progressive form script, inline live status, JSON results for enhanced submissions, specific expired-nonce/rate-limit errors, scalar query-status guard.
+- src/dragon-lead-form/assets/form.js: explicit browser validation and submission feedback, disabled sending state, same-origin JSON submission, preserved entries on error, timeout feedback, native fallback when scripting is unavailable.
+- Updated production contact ZIP, handoff ZIP and checksums; added versioned contact plugin ZIP.
+
 # Importer 1.0.2
 
 - src/dragon-site-setup/dragon-site-setup.php: bundled verified originals replace remote downloading; manifest checksums and filename restrictions; correct local-media check for same-domain migration; updated admin explanation and version.

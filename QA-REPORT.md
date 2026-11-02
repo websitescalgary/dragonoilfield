@@ -1,3 +1,13 @@
+# Contact form update — version 1.2.2
+
+The live button generated a submission in an intercepted browser test, and a deliberately invalid request to the live handler returned the expected 303 error redirect. No live enquiry or email was sent by these diagnostics. The reported silent behavior was not reproduced, so its specific cause remains unconfirmed.
+
+The replacement plugin adds inline validation, a Sending state with duplicate-submit protection, AJAX result messages, specific expired-nonce and 45-second-limit messages, and visible blocked/unexpected-response handling that retains visitor entries. It retains native POST/303 behavior when JavaScript is unavailable. Server-side nonce, honeypot, validation, rate limiting and private storage are unchanged. Nine isolated WordPress/browser checks passed: required fields, missing contacts, one actual private enquiry saved via AJAX, inline success with no navigation, button/form reset, precise rate-limit response, expired-nonce response, blocked-response recovery, native redirect fallback. All test mail was intercepted locally; real SMTP delivery remains unverified. PHP syntax passes.
+
+Install dragon-lead-form-v4-1.2.2.zip using Plugins → Add New → Upload Plugin → Replace current with uploaded. Activate if needed and clear relevant page/asset caches. The theme and setup importer do not need updating for this contact-form change.
+
+---
+
 # Importer update — version 1.0.2
 
 The original-photo limitation described in the historical report below is resolved for the updated package. All 11 approved originals were downloaded with TLS verification enabled and verified as JPEGs. The setup plugin now bundles these photos and a SHA-256 source manifest, then copies each verified file into a temporary file for WordPress media sideloading. It requires no old-host network access. No TLS verification was disabled. Existing Home content is preserved.
