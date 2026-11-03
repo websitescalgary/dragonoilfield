@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Dragon Lead Form
  * Description: Inquiry form, saved submissions, and email notifications for Dragon Oilfield Supply.
- * Version: 1.2.2
+ * Version: 1.2.3
  * Requires at least: 6.4
  * Requires PHP: 7.4
  * Text Domain: dragon-lead-form
@@ -23,6 +23,9 @@ add_action('admin_menu', function() {
     add_options_page('Dragon Contact Form','Dragon Contact Form','manage_options','dragon-contact-form','dragon_form_settings_page');
 });
 add_action('admin_init', function() {
+    register_setting('dragon_form_settings', 'dragon_form_confirmation', [
+        'type'=>'boolean', 'sanitize_callback'=>'rest_sanitize_boolean', 'default'=>false,
+    ]);
     register_setting('dragon_form_settings', 'dragon_form_email', [
         'type'=>'string', 'sanitize_callback'=>'sanitize_email', 'default'=>'billy@dragonoilfield.com',
     ]);
@@ -32,11 +35,13 @@ function dragon_form_settings_page() {
     echo '<div class="wrap"><h1>Dragon Contact Form</h1><p>Submissions are saved under <strong>Dragon Inquiries</strong> even if an email fails. Configure authenticated SMTP separately and send a real test inquiry after launch.</p><form method="post" action="options.php">';
     settings_fields('dragon_form_settings');
     echo '<table class="form-table"><tr><th scope="row"><label for="dragon_form_email">Notification email</label></th><td><input type="email" id="dragon_form_email" name="dragon_form_email" class="regular-text" value="'.esc_attr(get_option('dragon_form_email', 'billy@dragonoilfield.com')).'" required /></td></tr></table>';
+    echo '<p><input type="hidden" name="dragon_form_confirmation" value="0"><label><input type="checkbox" name="dragon_form_confirmation" value="1" '.checked(get_option('dragon_form_confirmation', false), true, false).'> Send visitors an email acknowledgement when they provide an email address</label></p>';
+    echo '<p>Enable after authenticated email sending is configured. Acknowledgements use a fixed message, not a copy of the enquiry. For abuse protection, a given email address receives at most one acknowledgement every 15 minutes. Phone-only enquiries cannot receive email.</p>';
     submit_button('Save Settings'); echo '</form></div>';
 }
 
 add_shortcode('dragon_inquiry_form', function () {
-    wp_enqueue_script('dragon-lead-form', plugins_url('assets/form.js', __FILE__), [], '1.2.2', true);
+    wp_enqueue_script('dragon-lead-form', plugins_url('assets/form.js', __FILE__), [], '1.2.3', true);
     $status = isset($_GET['dragon_form']) && is_string($_GET['dragon_form']) ? sanitize_key(wp_unslash($_GET['dragon_form'])) : '';
     ob_start();
     if ($status === 'success') echo '<p class="dragon-form-message success" role="status">Thank you. Your enquiry has been received. We will get back to you soon.</p>';
@@ -114,5 +119,46 @@ function dragon_process_inquiry() {
     if ($email) $headers[]='Reply-To: '.$email;
     $sent=wp_mail($to, '[Dragon Oilfield] New Website Enquiry', $details, $headers);
     update_post_meta($post_id,'dragon_email_attempt', $sent ? 'wp_mail_accepted' : 'wp_mail_failed');
+    dragon_send_confirmation($post_id, $email, $to);
     dragon_form_redirect('success');
 }
+
+/** A fixed acknowledgement avoids reflecting visitor-supplied content to third parties. */
+function dragon_send_confirmation($post_id, $email, $reply_to) {
+    if (!get_option('dragon_form_confirmation', false)) {
+        update_post_meta($post_id, 'dragon_confirmation_attempt', 'disabled');
+        return;
+    }
+    if (!$email || !is_email($email)) {
+        update_post_meta($post_id, 'dragon_confirmation_attempt', 'no_email');
+        return;
+    }
+    $key = 'dragon_receipt_'.substr(hash_hmac('sha256', strtolower($email), wp_salt('nonce')), 0, 28);
+    if (get_transient($key)) {
+        update_post_meta($post_id, 'dragon_confirmation_attempt', 'rate_limited');
+        return;
+    }
+    set_transient($key, 1, 15 * MINUTE_IN_SECONDS);
+    $headers = ['Content-Type: text/plain; charset=UTF-8'];
+    if (is_email($reply_to)) $headers[] = 'Reply-To: '.$reply_to;
+    $body = "Thank you for contacting Dragon Oilfield Supply.\n\nYour enquiry has been received. Our team will review it and get back to you.\n\nPhone: 403-660-3499\n\nIf you did not submit an enquiry, you can ignore this acknowledgement.";
+    $accepted = wp_mail($email, '[Dragon Oilfield] We received your enquiry', $body, $headers);
+    update_post_meta($post_id, 'dragon_confirmation_attempt', $accepted ? 'wp_mail_accepted' : 'wp_mail_failed');
+}
+
+add_action('add_meta_boxes_dragon_inquiry', function () {
+    if (!current_user_can('manage_options')) return;
+    add_meta_box('dragon-mail-status', 'Email notification attempts', function ($post) {
+        $labels = [
+            'wp_mail_accepted'=>'Accepted by WordPress/mail service; inbox delivery unconfirmed',
+            'wp_mail_failed'=>'Sending failed; enquiry remains saved',
+            'disabled'=>'Visitor acknowledgements are disabled',
+            'no_email'=>'No visitor email supplied',
+            'rate_limited'=>'Acknowledgement suppressed: same address within 15 minutes',
+        ];
+        foreach (['dragon_email_attempt'=>"Billy's notification", 'dragon_confirmation_attempt'=>'Visitor acknowledgement'] as $key=>$title) {
+            $value = get_post_meta($post->ID, $key, true);
+            echo '<p><strong>'.esc_html($title).':</strong><br>'.esc_html($labels[$value] ?? 'Not recorded').'</p>';
+        }
+    }, 'dragon_inquiry', 'side');
+});

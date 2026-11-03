@@ -1,3 +1,11 @@
+# Visitor acknowledgement update — version 1.2.3
+
+Added an administrator-controlled visitor acknowledgement, disabled by default. Billy receives the full enquiry as before; when enabled, a supplied valid visitor email receives a separate fixed acknowledgement. Phone-only submissions do not get receipts. The receipt does not reflect untrusted enquiry text, uses the business notification address as Reply-To, and is limited to once per recipient per 15 minutes. Existing nonce/honeypot and 45-second per-IP controls still apply. An admin enquiry panel reports both email attempt statuses and distinguishes mail acceptance from inbox delivery.
+
+Eleven local WordPress checks passed with every mail intercepted: disabled behavior; two distinct recipients; no reflected untrusted content; receipt Reply-To; recorded attempts/private storage; phone-only behavior; per-recipient receipt limit; failed receipt preserves saved enquiry; bad nonce; honeypot; invalid email. PHP syntax passed. Production SMTP setup and inbox receipt remain pending. See EMAIL-SETUP.md.
+
+---
+
 # Contact form update — version 1.2.2
 
 The live button generated a submission in an intercepted browser test, and a deliberately invalid request to the live handler returned the expected 303 error redirect. No live enquiry or email was sent by these diagnostics. The reported silent behavior was not reproduced, so its specific cause remains unconfirmed.

@@ -1,3 +1,9 @@
+# Contact form 1.2.3
+
+- Optional fixed visitor acknowledgements with per-recipient rate limiting; disabled by default.
+- Administrator setting and read-only email-attempt panel on private enquiries.
+- Versioned production ZIP and EMAIL-SETUP.md instructions. No live hosting, DNS or email settings changed.
+
 # Contact form 1.2.2
 
 - src/dragon-lead-form/dragon-lead-form.php: enqueue progressive form script, inline live status, JSON results for enhanced submissions, specific expired-nonce/rate-limit errors, scalar query-status guard.
